@@ -4,6 +4,38 @@ PROC_NAME='CrossOver'
 CO_PWD=~/Applications/CrossOver.app/Contents/MacOS
 [ -d "${CO_PWD}" ] || CO_PWD=/Applications/CrossOver.app/Contents/MacOS
 
+show_help() {
+    cat << EOF
+Usage: ${0##*/} [OPTIONS]
+
+Script de gestion et réinitialisation de CrossOver
+
+OPTIONS:
+    -h, --help      Affiche cette aide
+    -v, --version   Affiche la version
+
+FONCTIONNALITÉS:
+    • Ferme les processus CrossOver en cours
+    • Sauvegarde l'exécutable original
+    • Réinitialise les dates d'essai
+    • Nettoie les fichiers des bouteilles
+    • Relance l'application
+
+AUTEUR:
+    Développé par Jan Nguyen
+
+EXEMPLES:
+    ${0##*/}          # Exécute le script normalement
+    ${0##*/} -h       # Affiche l'aide
+EOF
+}
+
+show_version() {
+    echo "CrossOver Manager v1.0"
+    echo "Développé par Jan Nguyen"
+    echo "https://github.com/jannguyen"
+}
+
 check_dependencies() {
     local pidof_cmd
     pidof_cmd=$(which pidof 2>/dev/null)
@@ -104,6 +136,27 @@ start_crossover() {
 }
 
 main() {
+    case "${1:-}" in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        -v|--version)
+            show_version
+            exit 0
+            ;;
+        "")
+            ;;
+        *)
+            echo "❌ Option invalide: $1"
+            echo "Utilisez -h pour voir l'aide"
+            exit 1
+            ;;
+    esac
+
+    echo "🛠️  CrossOver Manager - par Jan Nguyen"
+    echo "======================================"
+
     check_dependencies
     validate_crossover_path
 
