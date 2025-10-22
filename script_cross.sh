@@ -1,54 +1,125 @@
 #!/usr/bin/env bash
 
-PIDOF="$(which pidof)"
-(test "${PIDOF}" && test -f "${PIDOF}") || brew install pidof
-
+PROC_NAME='CrossOver'
 CO_PWD=~/Applications/CrossOver.app/Contents/MacOS
 [ -d "${CO_PWD}" ] || CO_PWD=/Applications/CrossOver.app/Contents/MacOS
-[ -d "${CO_PWD}" ] || { echo "❌ Impossible de localiser CrossOver.app. Abandon."; exit 1; }
 
-cd "${CO_PWD}"
+check_dependencies() {
+    local pidof_cmd
+    pidof_cmd=$(which pidof 2>/dev/null)
 
-PROC_NAME='CrossOver'
+    if [[ ! -f "$pidof_cmd" ]]; then
+        echo "📦 Installation de pidof..."
+        brew install pidof || {
+            echo "❌ Échec de l'installation de pidof"
+            exit 1
+        }
+    fi
+}
 
-pids=($(pgrep "${PROC_NAME}") $(pidof "${PROC_NAME}") $(ps -Ac | grep -m1 "${PROC_NAME}" | awk '{print $1}'))
+validate_crossover_path() {
+    if [[ ! -d "${CO_PWD}" ]]; then
+        echo "❌ Impossible de localiser CrossOver.app"
+        exit 1
+    fi
+}
 
-if [ "${#pids[@]}" -gt 0 ]; then
-  echo "🔄 Fermeture de CrossOver..."
-  kill "${pids[@]}" > /dev/null 2>&1
-  sleep 3
-fi
+get_crossover_pids() {
+    local pids=()
 
-if [ ! -f CrossOver.origin ]; then
-  echo "💾 Sauvegarde de l'exécutable d'origine..."
-  mv CrossOver CrossOver.origin
-fi
+    pids+=($(pgrep "${PROC_NAME}" 2>/dev/null))
+    pids+=($(pidof "${PROC_NAME}" 2>/dev/null))
 
-echo "⏱️ Réinitialisation des dates de trial..."
+    local ps_pid
+    ps_pid=$(ps -Ac | grep -m1 "${PROC_NAME}" | awk '{print $1}' 2>/dev/null)
+    [[ -n "$ps_pid" ]] && pids+=("$ps_pid")
 
-DATETIME=$(date -u -v -3H '+%Y-%m-%dT%TZ')
+    printf '%s\n' "${pids[@]}" | sort -nu
+}
 
-plutil -replace FirstRunDate -date "${DATETIME}" ~/Library/Preferences/com.codeweavers.CrossOver.plist
-plutil -replace SULastCheckTime -date "${DATETIME}" ~/Library/Preferences/com.codeweavers.CrossOver.plist
+stop_crossover() {
+    local pids=($(get_crossover_pids))
 
-/usr/bin/osascript -e "display notification \"Trial modifié : date changée à ${DATETIME}\""
+    if [[ ${#pids[@]} -gt 0 ]]; then
+        echo "🔄 Fermeture de CrossOver..."
+        kill "${pids[@]}" > /dev/null 2>&1
+        sleep 3
+    fi
+}
 
-echo "🧹 Nettoyage des fichiers system.reg..."
-for file in ~/Library/Application\ Support/CrossOver/Bottles/*/system.reg; do 
-  sed -i '' -e "/^\\[Software\\\\\\\\CodeWeavers\\\\\\\\CrossOver\\\\\\\\cxoffice\\]/,+6d" "${file}";
-done
+backup_original() {
+    if [[ ! -f CrossOver.origin ]]; then
+        echo "💾 Sauvegarde de l'exécutable d'origine..."
+        mv CrossOver CrossOver.origin || {
+            echo "❌ Échec de la sauvegarde"
+            exit 1
+        }
+    fi
+}
 
-echo "🧹 Suppression des fichiers .update-timestamp..."
-for update_file in ~/Library/Application\ Support/CrossOver/Bottles/*/.update-timestamp; do 
-  rm -f "${update_file}"
-done
+reset_trial_dates() {
+    local datetime
+    datetime=$(date -u -v -3H '+%Y-%m-%dT%TZ')
 
-/usr/bin/osascript -e "display notification \"Bottles nettoyées : timestamps supprimés\""
+    echo "⏱️ Réinitialisation des dates de trial..."
 
-echo "🛠️ Réécriture du binaire CrossOver..."
-cat CrossOver.origin > CrossOver
-chmod +x CrossOver
+    plutil -replace FirstRunDate -date "${datetime}" \
+        ~/Library/Preferences/com.codeweavers.CrossOver.plist
+    plutil -replace SULastCheckTime -date "${datetime}" \
+        ~/Library/Preferences/com.codeweavers.CrossOver.plist
 
-echo "🚀 Lancement de CrossOver.origin..."
-"${PWD}/CrossOver.origin" >> /tmp/co_log.log 2>&1 &
+    /usr/bin/osascript -e \
+        "display notification \"Trial modifié : date changée à ${datetime}\""
+}
 
+clean_bottles() {
+    echo "🧹 Nettoyage des fichiers system.reg..."
+
+    for file in ~/Library/Application\ Support/CrossOver/Bottles/*/system.reg; do
+        [[ -f "$file" ]] || continue
+        sed -i '' -e "/^\\[Software\\\\\\\\CodeWeavers\\\\\\\\CrossOver\\\\\\\\cxoffice\\]/,+6d" "${file}"
+    done
+
+    echo "🧹 Suppression des fichiers .update-timestamp..."
+
+    for update_file in ~/Library/Application\ Support/CrossOver/Bottles/*/.update-timestamp; do
+        [[ -f "$update_file" ]] && rm -f "${update_file}"
+    done
+
+    /usr/bin/osascript -e "display notification \"Bottles nettoyées : timestamps supprimés\""
+}
+
+restore_binary() {
+    echo "🛠️ Réécriture du binaire CrossOver..."
+    cp CrossOver.origin CrossOver || {
+        echo "❌ Échec de la restauration du binaire"
+        exit 1
+    }
+    chmod +x CrossOver
+}
+
+start_crossover() {
+    echo "🚀 Lancement de CrossOver..."
+    "${PWD}/CrossOver.origin" >> /tmp/co_log.log 2>&1 &
+}
+
+main() {
+    check_dependencies
+    validate_crossover_path
+
+    cd "${CO_PWD}" || {
+        echo "❌ Impossible d'accéder à ${CO_PWD}"
+        exit 1
+    }
+
+    stop_crossover
+    backup_original
+    reset_trial_dates
+    clean_bottles
+    restore_binary
+    start_crossover
+
+    echo "✅ Opérations terminées avec succès"
+}
+
+main "$@"
