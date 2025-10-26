@@ -1,6 +1,6 @@
 # 🧌 CrossOver Easy - Solution macOS
 
-*CrossOver trop cher pour votre budget ? Moi aussi.*
+*CrossOver trop cher pour votre budget ? Pour moi aussi.*
 *Mais ne vous inquiétez pas, j'ai une solution pour vous.*
 
 ## 🚀 Fonctionnalité
