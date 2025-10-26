@@ -1,9 +1,38 @@
+# 🧌 CrossOver Easy - Solution macOS
 
-#  🧌 CrossOver Easy free trial
+*CrossOver trop cher pour votre budget ? Moi aussi.*
+*Mais ne vous inquiétez pas, j'ai une solution pour vous.*
 
-Are you poor and CrossOver is too expensive?
-Me too.
+## 🚀 Fonctionnalité
 
-But don't worry I got you.
+Ce script offre une méthode alternative pour prolonger votre période d'essai de CrossOver sur macOS.
 
-Just run this script on your root.
+## ⚠️ Avertissement Important
+
+**Utilisez à vos propres risques !**
+- À des fins éducatives uniquement
+- Pensez à acheter une licence si vous utilisez régulièrement le logiciel
+- Non recommandé pour un usage professionnel
+- Assurez-vous de comprendre les implications
+
+## 📋 Prérequis macOS
+
+- macOS 10.14 ou version ultérieure
+- Accès administrateur (sudo)
+- Terminal basique
+- CrossOver déjà installé
+
+## 🛠️ Installation & Utilisation
+
+```bash
+# Cloner le dépôt
+git clone https://github.com/JanNguy/cross-easy-trial.git
+
+# Se déplacer dans le dossier
+cd cross-easy-trial
+
+# Rendre le script exécutable
+chmod +x crossover.sh
+
+# Exécuter avec les privilèges administrateur
+sudo ./crossover.sh
