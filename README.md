@@ -18,6 +18,7 @@ Ce script offre une méthode alternative pour prolonger votre période d'essai d
 ## 📋 Prérequis macOS
 
 - macOS 10.14 ou version ultérieure
+- [Homebrew] (https://docs.brew.sh/Installation)
 - Accès administrateur (sudo)
 - Terminal basique
 - CrossOver déjà installé
